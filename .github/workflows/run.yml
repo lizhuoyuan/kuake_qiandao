@@ -10,6 +10,9 @@ jobs:
 
   run-python:
     runs-on: ubuntu-latest  # 运行环境：Ubuntu 最新版
+    strategy:
+      fail-fast: false
+      max-attempts: 3   # 失败最多重试3次
     steps:
       - name: Checkout code
         uses: actions/checkout@v4  # 检查代码
