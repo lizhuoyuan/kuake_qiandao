@@ -2,20 +2,15 @@ name: 夸克网盘自动签到脚本
 
 on:
   schedule:
-    # 定时执行，默认UTC时区， 中国时区需要+8小时， 中国时间每天10:05执行
     - cron: '5 2 * * *'
+  workflow_dispatch:
 
-  workflow_dispatch:  # 允许手动触发
 jobs:
-
   run-python:
-    runs-on: ubuntu-latest  # 运行环境：Ubuntu 最新版
-    strategy:
-      fail-fast: false
-      max-attempts: 3   # 失败最多重试3次
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4  # 检查代码
+        uses: actions/checkout@v4
 
       - name: astral-sh/setup-uv
         uses: astral-sh/setup-uv@v5
@@ -23,14 +18,13 @@ jobs:
           enable-cache: false
           cache-dependency-glob: false
 
-
       - name: Check UV version
-        run: uv --version  # 检查 UV 版本
+        run: uv --version
 
       - name: Sync dependencies with UV
-        run: uv sync  # 使用 UV 同步依赖
+        run: uv sync
 
-      - name: Run Python script with UV
+      - name: Run Python script with UV (retry up to 3 times)
         env:
           QUARK_KPS: ${{ secrets.QUARK_KPS }}
           QUARK_SIGN: ${{ secrets.QUARK_SIGN }}
@@ -39,4 +33,9 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           EMAIL: ${{ secrets.EMAIL }}
           PASSWORD: ${{ secrets.PASSWORD }}
-        run: uv run main.py  # 使用 UV 运行 Python 脚本
+        run: |
+          for i in 1 2 3; do
+            uv run main.py && break
+            echo "Attempt $i failed, retrying in 10 seconds..."
+            sleep 10
+          done
